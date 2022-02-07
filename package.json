@@ -1,0 +1,28 @@
+{
+  "name": "transaction-intelligence",
+  "version": "1.0.0",
+  "description": "Transaction Intelligence microservice project",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apaul14/Transaction-Intelligence.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/apaul14/Transaction-Intelligence/issues"
+  },
+  "homepage": "https://github.com/apaul14/Transaction-Intelligence#readme",
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.2",
+    "morgan": "^1.10.0"
+  }
+}
