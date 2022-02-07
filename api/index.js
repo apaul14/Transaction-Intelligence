@@ -1,7 +1,7 @@
 const router = require('express').Router();
 module.exports = router;
 
-
+router.use('/upload_historical_transactions', require('./uploadTransactions'));
 
 router.get('/', async (req, res, next) => {
   const email = req.body.email
