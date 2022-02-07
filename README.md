@@ -1,2 +1,2 @@
 # Transaction-Intelligence
-Transaction Intelligence microservice
+Transaction Intelligence microservice project
