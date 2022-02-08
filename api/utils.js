@@ -7,7 +7,10 @@ const utils = {
 
     const recurringTransactions = this.compareTransactionDescriptions(transactions)
     // let recurring = this.compareTransactionDescriptions(transactions)
-    // console.log("recurring in func", recurring)
+    // for (let key in recurringTransactions) {
+    //   this.findAverageAmount(recurringTransactions[key])
+    // }
+    this.findAverageAmount(recurringTransactions)
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -71,8 +74,26 @@ const utils = {
 
     return recurring
   },
-  compareAmounts(transactions) {
-    
+  findAverageAmount(transactions) {
+    console.log('trans', transactions)
+    for (let key in transactions) {
+      let transactionDates = transactions[key]['dates']
+      let transactionAmounts = []
+
+      for (let i = 0; i < transactionDates.length; i++) {
+        let date = transactionDates[i]
+        transactionAmounts.push(date['amount'])
+        console.log('amt', transactionAmounts)
+      }
+       let averageAmount = transactionAmounts.reduce((acc, cum) => acc + cum, 0) / transactionAmounts.length
+       transactions[key]['averageAmount'] = averageAmount
+    }
+    console.log('trans2', transactions)
+    return transactions
+  },
+  findAndCompareStandardDeviation(transactions) {
+    console.log(transactions)
+
   }
 }
 

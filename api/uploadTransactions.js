@@ -25,7 +25,8 @@ router.post('/', async (req, res, next) => {
     //console.log('data in ->', data)
 
     
-    const recurringTransactions = utils.findRecurringTransactions(mockDataStore[0].transactions)
+    // const recurringTransactions = utils.findRecurringTransactions(mockDataStore[0].transactions)
+    const recurringTransactions = utils.findRecurringTransactions(req.body.transactions)
     for (let key in recurringTransactions) response.recurringTransactions.push(recurringTransactions)
 
 
