@@ -10,7 +10,7 @@ const utils = {
     // for (let key in recurringTransactions) {
     //   this.findAverageAmount(recurringTransactions[key])
     // }
-    this.findAverageAmount(recurringTransactions)
+    const calculateMeanandSTDDEV = this.findAverageandStandardDeviation(recurringTransactions)
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -74,8 +74,8 @@ const utils = {
 
     return recurring
   },
-  findAverageAmount(transactions) {
-    console.log('trans', transactions)
+  findAverageandStandardDeviation(transactions) {
+    //console.log('trans', transactions)
     for (let key in transactions) {
       let transactionDates = transactions[key]['dates']
       let transactionAmounts = []
@@ -83,18 +83,33 @@ const utils = {
       for (let i = 0; i < transactionDates.length; i++) {
         let date = transactionDates[i]
         transactionAmounts.push(date['amount'])
-        console.log('amt', transactionAmounts)
+        //console.log('amt', transactionAmounts)
       }
-       let averageAmount = transactionAmounts.reduce((acc, cum) => acc + cum, 0) / transactionAmounts.length
-       transactions[key]['averageAmount'] = averageAmount
+      //calculate Average
+      let averageAmount = transactionAmounts.reduce((acc, cum) => acc + cum, 0) / transactionAmounts.length
+      transactions[key]['averageAmount'] = averageAmount
+
+       //calculate variance
+      let squareDiffs = transactionAmounts.map((value) => {
+        let diff = value - averageAmount;
+        diff *= diff
+        return diff
+      })
+      let variance = squareDiffs.reduce((acc, cum) => acc + cum, 0) / squareDiffs.length
+      //console.log('variance', squareDiffs, variance)
+      //calculate std deviation
+      let stdDeviation = Math.sqrt(variance)
+      stdDeviation = +stdDeviation.toFixed(2)
+      transactions[key]['stdDeviation'] = stdDeviation
     }
-    console.log('trans2', transactions)
+    
+    //console.log('trans2', transactions)
     return transactions
   },
-  findAndCompareStandardDeviation(transactions) {
-    console.log(transactions)
+  // findAndCompareStandardDeviation(transactions) {
+  //   console.log(transactions)
 
-  }
+  // }
 }
 
 module.exports = utils
