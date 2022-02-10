@@ -84,10 +84,10 @@ const utils = {
     return recurring
   },
   determineTransactionPeriodicity(transactions) {
-    let periodDetectedFlag = false
     console.log('analyze', transactions)
     //identify and format dates
     for (let key in transactions) {
+      let periodDetectedFlag = false
       let dates = transactions[key].dates
       let formattedDates = []
       //console.log('dates', dates)
@@ -105,30 +105,52 @@ const utils = {
       }
       console.log('datesarray', formattedDates)
 
-      //test against comparison windows
+      //test against comparison windows. each subsequent test only runs if periodicity not detected previously
         //yearly
-      for (let i = 0; i <= formattedDates.length - 2; i++) {
-        let firstDate = formattedDates[i]
-        let secondDate = formattedDates[i + 1]
-        //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
-        let paddedDate = addDays(secondDate, 60)
-        //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
-        // console.log(i, firstDate, paddedDate)
-        // console.log(formattedDates.length, i === formattedDates.length - 2)
-        if (differenceInYears(paddedDate, firstDate) !== 1) {
-          // console.log(firstDate, paddedDate)
-          break
+        if (!periodDetectedFlag) {
+          for (let i = 0; i <= formattedDates.length - 2; i++) {
+            let firstDate = formattedDates[i]
+            let secondDate = formattedDates[i + 1]
+            //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
+            let paddedDate = addDays(secondDate, 60)
+            //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
+            // console.log(i, firstDate, paddedDate)
+            // console.log(formattedDates.length, i === formattedDates.length - 2)
+            if (differenceInYears(paddedDate, firstDate) !== 1) {
+              // console.log(firstDate, paddedDate)
+              break
+            }
+            else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+              console.log(formattedDates.length, i, paddedDate)
+              console.log('yearly')
+              transactions[key]['periodicity'] = 'annual'
+              console.log(transactions)
+              periodDetectedFlag = true
+            }
+          }
         }
-        else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-          console.log(formattedDates.length, i, paddedDate)
-          console.log('yearly')
-          transactions[key]['periodicity'] = 'annual'
-          console.log(transactions)
+          //monthly
+        if (!periodDetectedFlag) {
+          for (let i = 0; i <= formattedDates.length - 2; i++) {
+          let firstDate = formattedDates[i]
+          let secondDate = formattedDates[i + 1]
+          //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
+          let paddedDate = addDays(secondDate, 7)
+          //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
+          // console.log(i, firstDate, paddedDate)
+          // console.log(formattedDates.length, i === formattedDates.length - 2)
+          if (differenceInMonths(paddedDate, firstDate) !== 1) {
+            //console.log(firstDate, paddedDate)
+            break
+          }
+          else if (differenceInMonths(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+            console.log(formattedDates.length, i, paddedDate)
+            console.log('monthly')
+            transactions[key]['periodicity'] = 'monthly'
+            console.log(transactions)
+            periodDetectedFlag = true
+          }
         }
-        // else if (differenceInYears(paddedDate, firstDate) === 1) {
-        //   //onsole.log(i)
-        //   continue
-        // }
       }
 
     }
