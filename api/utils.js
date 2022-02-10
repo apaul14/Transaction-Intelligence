@@ -202,10 +202,13 @@ const utils = {
       })
       let variance = squareDiffs.reduce((acc, cum) => acc + cum, 0) / squareDiffs.length
       //console.log('variance', squareDiffs, variance)
-      //calculate std deviation
+      //calculate SD 
       let stdDeviation = Math.sqrt(variance)
       stdDeviation = +stdDeviation.toFixed(2)
-      transactions[key]['stdDeviation'] = stdDeviation
+
+      //only return if SD < 2.5
+      if (stdDeviation < 2.5) transactions[key]['stdDeviation'] = stdDeviation
+      else delete transactions[key]
     }
     
     //console.log('trans2', transactions)
