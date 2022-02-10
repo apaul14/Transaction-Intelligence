@@ -30,7 +30,7 @@ const utils = {
     //part 2
     const validateCurrentRecurringTransactions = this.validateCurrentRecurringTransactions(transactionPeriodicity)
     const addPastTransactions = this.addPastTransactions(validateCurrentRecurringTransactions)
-    const addFutureTransactins = this.addFutureTransactins(addPastTransactions)
+    const addFutureTransactions = this.addFutureTransactions(addPastTransactions)
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -332,10 +332,24 @@ const utils = {
     //console.log(returnVal)
     return returnVal
   },
-  addFutureTransactins(transactions) {
+  addFutureTransactions(transactions) {
     const returnVal = transactions
 
-    console.log('add', returnVal)
+    for (let key in returnVal) {
+      const periodicity = returnVal[key]['periodicity']
+      const averageAmount = returnVal[key]['averageAmount']
+      //using average amount as best predictor of future payment amounts
+      if (periodicity === 'annual') {
+        returnVal[key]['futureTransactionsTotal'] = averageAmount * 10
+      }
+      if (periodicity === 'monthly') {
+        returnVal[key]['futureTransactionsTotal'] = averageAmount * 120
+      }
+      if (periodicity === 'weekly') {
+        returnVal[key]['futureTransactionsTotal'] = averageAmount * 520
+      }
+    }
+    console.log(returnVal)
   }
 }
 
