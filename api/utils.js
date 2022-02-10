@@ -3,12 +3,19 @@ const differenceInMonths = require('date-fns/differenceInMonths')
 const differenceInWeeks = require('date-fns/differenceInWeeks')
 const differenceInYears = require('date-fns/differenceInYears')
 const addDays = require('date-fns/addDays')
+const subYears = require('date-fns/subYears') //change to sub
+// const subMonths = require('date-fns/subMonths')
+const sub = require('date-fns/sub')
+const isSameYear = require('date-fns/isSameYear')
+const isSameMonth = require('date-fns/isSameMonth')
+const isSameWeek = require('date-fns/isSameWeek')
+
 
 
 
 const utils = {
 
-  findRecurringTransactions (transactions){
+  findRecurringTransactions (transactions){ //break this up into different services for pt 1, 2, 3, 4 ?????
     const returnVal = []
     // console.log('first log->',transactions)
     // console.log(this.compareTransactionDescriptions(transactions))
@@ -18,8 +25,11 @@ const utils = {
     // for (let key in recurringTransactions) {
     //   this.findAverageAmount(recurringTransactions[key])
     // }
-    const calculateMeanandSTDDEV = this.findAverageandStandardDeviation(recurringTransactions)
-    this.determineTransactionPeriodicity(calculateMeanandSTDDEV)
+    const calculateMeanAndSTDDEV = this.findAverageandStandardDeviation(recurringTransactions)
+    const transactionPeriodicity = this.determineTransactionPeriodicity(calculateMeanAndSTDDEV) //push this to response
+    //part 2
+    const validateCurrentRecurringTransactions = this.validateCurrentRecurringTransactions(transactionPeriodicity)
+    const addPastTransactions = this.addPastTransactions(validateCurrentRecurringTransactions)
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -84,7 +94,7 @@ const utils = {
     return recurring
   },
   determineTransactionPeriodicity(transactions) {
-    console.log('analyze', transactions)
+    //console.log('analyze', transactions)
     //identify and format dates
     for (let key in transactions) {
       let periodDetectedFlag = false
@@ -103,8 +113,8 @@ const utils = {
         // }
 
       }
-      formattedDates.sort((a,b) => a - b)
-      console.log('datesarray', formattedDates)
+      transactions[key].dates = formattedDates.sort((a,b) => a - b)
+      //console.log('datesarray', formattedDates)
 
       //test against comparison windows. each subsequent test only runs if periodicity not detected previously
         //yearly
@@ -117,15 +127,16 @@ const utils = {
             //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
             // console.log(i, firstDate, paddedDate)
             // console.log(formattedDates.length, i === formattedDates.length - 2)
+            //console.log(formattedDates)
             if (differenceInYears(paddedDate, firstDate) !== 1) {
-              // console.log(firstDate, paddedDate)
+              //console.log(firstDate, paddedDate)
               break
             }
             else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
               // console.log(formattedDates.length, i, paddedDate)
               // console.log('yearly')
               transactions[key]['periodicity'] = 'annual'
-              // console.log(transactions)
+              //console.log(transactions)
               periodDetectedFlag = true
             }
           }
@@ -177,7 +188,8 @@ const utils = {
     }
 
     }
-    console.log(transactions)
+    //console.log(transactions)
+    return transactions
   },
   findAverageandStandardDeviation(transactions) {
     //console.log('trans', transactions)
@@ -213,6 +225,87 @@ const utils = {
     
     //console.log('trans2', transactions)
     return transactions
+  },
+  validateCurrentRecurringTransactions(transactions) {
+    const returnVal = transactions
+    //validate recurring transacation has occured past 3 periods
+    const currentDate = new Date()
+    //console.log(transactions)
+    for (let key in returnVal) {
+      const dates = returnVal[key]['dates']
+      const mostRecentTransaction = dates[dates.length - 1]
+      const secondMostRecentTransaction = dates[dates.length - 2]
+      const thirdMostRecentTransaction = dates[dates.length - 3]
+      const periodicity = returnVal[key]['periodicity']
+      //console.log(periodicity, key)
+      if (!periodicity) delete returnVal[key]
+
+      if (periodicity === 'annual') {
+        const firstPrevYear = subYears(currentDate, 1)
+        const secondPrevYear = subYears(currentDate, 2)
+        const thirdPrevYear = subYears(currentDate, 3)
+        // console.log(dates)
+        // console.log(isSameYear(mostRecentPeriod, firstPrevYear))
+        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
+        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
+
+        if (!isSameYear(mostRecentTransaction, firstPrevYear) 
+          || !isSameYear(secondMostRecentTransaction, secondPrevYear)
+          || !isSameYear(thirdMostRecentTransaction, thirdPrevYear)) {
+            delete returnVal[key]
+            //console.log("nope year", key)
+            //return false
+          } else {
+            //console.log("yup year", key)
+            //return true
+          }
+      }
+      if (periodicity === 'monthly') {
+        const firstPrevMonth = sub(currentDate, { months: 1 })
+        const secondPrevMonth = sub(currentDate, { months: 2 })
+        const thirdPrevMonth = sub(currentDate, { months: 3 })
+        // console.log(dates)
+        // console.log( firstPrevMonth, firstPrevMonth)
+        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
+        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
+
+        if (!isSameMonth(mostRecentTransaction, firstPrevMonth) 
+          || !isSameMonth(secondMostRecentTransaction, secondPrevMonth)
+          || !isSameMonth(thirdMostRecentTransaction, thirdPrevMonth)) {
+            delete returnVal[key]
+            //console.log("nope month", key)
+            //return false
+          } else {
+            //console.log("yup month", key)
+            //return true
+          }
+      }
+      if (periodicity === 'weekly') {
+        const firstPrevWeek = sub(currentDate, { weeks: 1 })
+        const secondPrevWeek = sub(currentDate, { weeks: 2 })
+        const thirdPrevWeek = sub(currentDate, { weeks: 3 })
+        //console.log('hello')
+        // console.log( firstPrevMonth, firstPrevMonth)
+        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
+        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
+
+        if (!isSameWeek(mostRecentTransaction, firstPrevWeek) 
+          || !isSameWeek(secondMostRecentTransaction, secondPrevWeek)
+          || !isSameWeek(thirdMostRecentTransaction, thirdPrevWeek)) {
+            //console.log("nope week", key)
+            //return false
+            delete returnVal[key]
+          } else {
+            //console.log("yup week", key)
+            //return true
+          }
+      }
+    }
+    //console.log(returnVal)
+    return returnVal
+  },
+  addPastTransactions(transactions) {
+    console.log(transactions)
   }
 }
 
