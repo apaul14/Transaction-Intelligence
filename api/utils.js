@@ -241,11 +241,15 @@ const utils = {
     for (let key in returnVal) {
       const dates = returnVal[key]['dates']
       const mostRecentTransaction = dates[dates.length - 1][0]
-      const secondMostRecentTransaction = dates[dates.length - 2][0]
-      const thirdMostRecentTransaction = dates[dates.length - 3][0]
+      const secondMostRecentTransaction = dates[dates.length - 2] ? dates[dates.length - 2][0] : null
+      const thirdMostRecentTransaction = dates[dates.length - 3] ? dates[dates.length - 3][0] : null
       const periodicity = returnVal[key]['periodicity']
       //console.log(periodicity, key)
-      if (!periodicity) delete returnVal[key]
+      //console.log(secondMostRecentTransaction, thirdMostRecentTransaction)
+      if (!periodicity || !secondMostRecentTransaction || !thirdMostRecentTransaction) { //put this before transaction assigments to shorten ( if dates.length !> 3 delete)
+        delete returnVal[key]
+        continue
+      }
 
       if (periodicity === 'annual') {
         const firstPrevYear = subYears(currentDate, 1)
@@ -322,14 +326,16 @@ const utils = {
         let amount = dates[i][1]
         total += amount
       }
-      console.log(total)
+      //console.log(total)
       returnVal[key]['pastTransactionTotal'] = total
     }
     //console.log(returnVal)
     return returnVal
   },
   addFutureTransactins(transactions) {
+    const returnVal = transactions
 
+    console.log('add', returnVal)
   }
 }
 
