@@ -1,6 +1,6 @@
 const formatDate = require('date-fns/format')
 const differenceInMonths = require('date-fns/differenceInMonths')
-const differenceInDays = require('date-fns/differenceInDays')
+const differenceInWeeks = require('date-fns/differenceInWeeks')
 const differenceInYears = require('date-fns/differenceInYears')
 const addDays = require('date-fns/addDays')
 
@@ -103,6 +103,7 @@ const utils = {
         // }
 
       }
+      formattedDates.sort((a,b) => a - b)
       console.log('datesarray', formattedDates)
 
       //test against comparison windows. each subsequent test only runs if periodicity not detected previously
@@ -121,10 +122,10 @@ const utils = {
               break
             }
             else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-              console.log(formattedDates.length, i, paddedDate)
-              console.log('yearly')
+              // console.log(formattedDates.length, i, paddedDate)
+              // console.log('yearly')
               transactions[key]['periodicity'] = 'annual'
-              console.log(transactions)
+              // console.log(transactions)
               periodDetectedFlag = true
             }
           }
@@ -144,17 +145,39 @@ const utils = {
             break
           }
           else if (differenceInMonths(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-            console.log(formattedDates.length, i, paddedDate)
-            console.log('monthly')
+            // console.log(formattedDates.length, i, paddedDate)
+            // console.log('monthly')
             transactions[key]['periodicity'] = 'monthly'
-            console.log(transactions)
+            // console.log(transactions)
             periodDetectedFlag = true
           }
         }
       }
+      if (!periodDetectedFlag) {
+        for (let i = 0; i <= formattedDates.length - 2; i++) {
+        let firstDate = formattedDates[i]
+        let secondDate = formattedDates[i + 1]
+        //add days to acceptance window in order to account for weekends, slightly off-schedule billing, etc.
+        let paddedDate = addDays(secondDate, 3)
+        //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
+        // console.log(i, firstDate, paddedDate)
+        // console.log(formattedDates.length, i === formattedDates.length - 2)
+        if (differenceInWeeks(paddedDate, firstDate) !== 1) {
+          // console.log(firstDate, paddedDate)
+          break
+        }
+        else if (differenceInWeeks(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+          //console.log(formattedDates.length, i, paddedDate)
+          //console.log('weekly')
+          transactions[key]['periodicity'] = 'weekly'
+          //console.log(transactions)
+          periodDetectedFlag = true
+        }
+      }
+    }
 
     }
-    
+    console.log(transactions)
   },
   findAverageandStandardDeviation(transactions) {
     //console.log('trans', transactions)
