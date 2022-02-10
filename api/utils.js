@@ -95,7 +95,7 @@ const utils = {
   },
   determineTransactionPeriodicity(transactions) {
     const returnVal = transactions
-    console.log('analyze', transactions)
+    //console.log('analyze', transactions)
     //identify and format dates
     for (let key in returnVal) {
       let periodDetectedFlag = false
@@ -236,12 +236,12 @@ const utils = {
     const returnVal = transactions
     //validate recurring transacation has occured past 3 periods
     const currentDate = new Date()
-    //console.log(transactions)
+    //console.log(returnVal)
     for (let key in returnVal) {
       const dates = returnVal[key]['dates']
-      const mostRecentTransaction = dates[dates.length - 1]
-      const secondMostRecentTransaction = dates[dates.length - 2]
-      const thirdMostRecentTransaction = dates[dates.length - 3]
+      const mostRecentTransaction = dates[dates.length - 1][0]
+      const secondMostRecentTransaction = dates[dates.length - 2][0]
+      const thirdMostRecentTransaction = dates[dates.length - 3][0]
       const periodicity = returnVal[key]['periodicity']
       //console.log(periodicity, key)
       if (!periodicity) delete returnVal[key]
@@ -311,7 +311,13 @@ const utils = {
     return returnVal
   },
   addPastTransactions(transactions) {
-    //console.log(transactions)
+    const returnVal = transactions
+    
+    for (key in returnVal) {
+      let total = 0
+      let dates = returnVal['']
+      // let (i = 0; i < )
+    }
   }
 }
 
