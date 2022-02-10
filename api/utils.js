@@ -30,6 +30,7 @@ const utils = {
     //part 2
     const validateCurrentRecurringTransactions = this.validateCurrentRecurringTransactions(transactionPeriodicity)
     const addPastTransactions = this.addPastTransactions(validateCurrentRecurringTransactions)
+    const addFutureTransactins = this.addFutureTransactins(addPastTransactions)
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -313,11 +314,22 @@ const utils = {
   addPastTransactions(transactions) {
     const returnVal = transactions
     
-    for (key in returnVal) {
+    for (let key in returnVal) {
       let total = 0
-      let dates = returnVal['']
-      // let (i = 0; i < )
+      let dates = returnVal[key]['dates']
+
+      for (let i = 0; i < dates.length; i ++ ) {
+        let amount = dates[i][1]
+        total += amount
+      }
+      console.log(total)
+      returnVal[key]['pastTransactionTotal'] = total
     }
+    //console.log(returnVal)
+    return returnVal
+  },
+  addFutureTransactins(transactions) {
+
   }
 }
 
