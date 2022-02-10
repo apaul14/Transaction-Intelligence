@@ -31,6 +31,8 @@ const utils = {
     const validateCurrentRecurringTransactions = this.validateCurrentRecurringTransactions(transactionPeriodicity)
     const addPastTransactions = this.addPastTransactions(validateCurrentRecurringTransactions)
     const addFutureTransactions = this.addFutureTransactions(addPastTransactions)
+    const determineRecurringValues = this.determineRecurringValues(addFutureTransactions)
+    const formatRecurringValueList = this.formatRecurringValueList(determineRecurringValues)
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -327,7 +329,7 @@ const utils = {
         total += amount
       }
       //console.log(total)
-      returnVal[key]['pastTransactionTotal'] = total
+      returnVal[key]['pastTransactionsTotal'] = total
     }
     //console.log(returnVal)
     return returnVal
@@ -349,7 +351,25 @@ const utils = {
         returnVal[key]['futureTransactionsTotal'] = averageAmount * 520
       }
     }
-    console.log(returnVal)
+    return returnVal
+    //console.log(returnVal)
+  },
+  determineRecurringValues(transactions) {
+    const returnVal = transactions
+    //console.log(returnVal)
+    for (let key in returnVal) {
+      const futureTransactionsTotal = returnVal[key]['futureTransactionsTotal']
+      const pastTransactionsTotal = returnVal[key]['pastTransactionsTotal']
+      const recurringValueTotal = futureTransactionsTotal + pastTransactionsTotal
+      //console.log('recurring total',recurringValueTotal)
+      if (recurringValueTotal > 0){
+        continue
+      } else {
+        returnVal[key]['recurringValueTotal'] = recurringValueTotal
+      }
+    }
+    //console.log(returnVal)
+    return returnVal
   }
 }
 
