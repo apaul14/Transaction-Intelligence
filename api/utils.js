@@ -1,3 +1,11 @@
+const formatDate = require('date-fns/format')
+const differenceInMonths = require('date-fns/differenceInMonths')
+const differenceInDays = require('date-fns/differenceInDays')
+const differenceInYears = require('date-fns/differenceInYears')
+const addDays = require('date-fns/addDays')
+
+
+
 const utils = {
 
   findRecurringTransactions (transactions){
@@ -11,6 +19,7 @@ const utils = {
     //   this.findAverageAmount(recurringTransactions[key])
     // }
     const calculateMeanandSTDDEV = this.findAverageandStandardDeviation(recurringTransactions)
+    this.determineTransactionPeriodicity(calculateMeanandSTDDEV)
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -74,6 +83,57 @@ const utils = {
 
     return recurring
   },
+  determineTransactionPeriodicity(transactions) {
+    let periodDetectedFlag = false
+    console.log('analyze', transactions)
+    //identify and format dates
+    for (let key in transactions) {
+      let dates = transactions[key].dates
+      let formattedDates = []
+      //console.log('dates', dates)
+      
+      for (let i = 0; i < dates.length; i++) {
+        let element = dates[i]['date']
+        let formattedDate = new Date(element)
+        formattedDates.push(formattedDate)
+        //let formattedDate = formatDate(element, 'w')
+        //console.log('elem', element, formattedDate)
+        // for (let j = 1; j < dates.length; j++) {
+
+        // }
+
+      }
+      console.log('datesarray', formattedDates)
+
+      //test against comparison windows
+        //yearly
+      for (let i = 0; i <= formattedDates.length - 2; i++) {
+        let firstDate = formattedDates[i]
+        let secondDate = formattedDates[i + 1]
+        //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
+        let paddedDate = addDays(secondDate, 60)
+        //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
+        // console.log(i, firstDate, paddedDate)
+        // console.log(formattedDates.length, i === formattedDates.length - 2)
+        if (differenceInYears(paddedDate, firstDate) !== 1) {
+          // console.log(firstDate, paddedDate)
+          break
+        }
+        else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+          console.log(formattedDates.length, i, paddedDate)
+          console.log('yearly')
+          transactions[key]['periodicity'] = 'annual'
+          console.log(transactions)
+        }
+        // else if (differenceInYears(paddedDate, firstDate) === 1) {
+        //   //onsole.log(i)
+        //   continue
+        // }
+      }
+
+    }
+    
+  },
   findAverageandStandardDeviation(transactions) {
     //console.log('trans', transactions)
     for (let key in transactions) {
@@ -105,11 +165,7 @@ const utils = {
     
     //console.log('trans2', transactions)
     return transactions
-  },
-  // findAndCompareStandardDeviation(transactions) {
-  //   console.log(transactions)
-
-  // }
+  }
 }
 
 module.exports = utils
