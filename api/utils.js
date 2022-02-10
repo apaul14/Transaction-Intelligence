@@ -32,7 +32,7 @@ const utils = {
     const addPastTransactions = this.addPastTransactions(validateCurrentRecurringTransactions)
     const addFutureTransactions = this.addFutureTransactions(addPastTransactions)
     const determineRecurringValues = this.determineRecurringValues(addFutureTransactions)
-    const formatRecurringValueList = this.formatRecurringValueList(determineRecurringValues)
+    const formatRecurringValueList = this.formatRecurringValueList(determineRecurringValues) //push this to response
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -362,13 +362,33 @@ const utils = {
       const pastTransactionsTotal = returnVal[key]['pastTransactionsTotal']
       const recurringValueTotal = futureTransactionsTotal + pastTransactionsTotal
       //console.log('recurring total',recurringValueTotal)
-      if (recurringValueTotal > 0){
+
+      //compute recurringTotalValue to return if sum is less than 0
+      if (recurringValueTotal >= 0){
         continue
       } else {
         returnVal[key]['recurringValueTotal'] = recurringValueTotal
       }
     }
     //console.log(returnVal)
+    return returnVal
+  },
+  formatRecurringValueList(transactions) {
+    const returnVal = []
+    //console.log(transactions)
+    for (let key in transactions) {
+      //console.log(transactions[key])
+      const description = transactions[key]
+      const recurringValueTotal = transactions[key]?.['recurringValueTotal'] ?? null
+
+      if (recurringValueTotal !== null) {
+        returnVal.push({
+          'description': key,
+          'value': recurringValueTotal
+        })
+      }
+    }
+    console.log(returnVal)
     return returnVal
   }
 }
