@@ -17,18 +17,21 @@ const parseISO = require('date-fns/parseISO')
 
 const utils = {
 
-  findRecurringTransactions (transactions) { //break this up into different services for pt 1, 2, 3, 4 ?????
-    const returnVal = []
-    // console.log('first log->',transactions)
-    // console.log(this.compareTransactionDescriptions(transactions))
-
+  processTransactions (transactions) {
+    const response = {
+      recurringTransactions: [],
+      recurringValues: [],
+      windowLimits: [],
+      counterPartyLimits: []
+    }
+  
     const recurringTransactions = this.compareTransactionDescriptions(transactions)
-    // let recurring = this.compareTransactionDescriptions(transactions)
-    // for (let key in recurringTransactions) {
-    //   this.findAverageAmount(recurringTransactions[key])
-    // }
+  
     const calculateMeanAndSTDDEV = this.findAverageandStandardDeviation(recurringTransactions)
     const transactionPeriodicity = this.determineTransactionPeriodicity(calculateMeanAndSTDDEV) //push this to response
+
+    response.recurringTransactions.push(transactionPeriodicity)
+
     //part 2
     const validateCurrentRecurringTransactions = this.validateCurrentRecurringTransactions(transactionPeriodicity)
     const addPastTransactions = this.addPastTransactions(validateCurrentRecurringTransactions)
@@ -36,8 +39,12 @@ const utils = {
     const determineRecurringValueTotals = this.determineRecurringValueTotals(addFutureTransactions)
     const formatRecurringValueList = this.formatRecurringValueList(determineRecurringValueTotals) //push this to response
 
+    response.recurringValues.push(formatRecurringValueList)
+
     //part 3
-    //const windowLimit = this.determineWindowLimit(transactionPeriodicity)
+    const windowLimit = this.determineWindowLimit(recurringTransactions)
+    console.log(response)
+    return response
   },
   compareTransactionDescriptions (transactions) {
     const recurring = {}
@@ -83,9 +90,6 @@ const utils = {
   determineTransactionPeriodicity(transactions) {
     const returnVal = JSON.parse(JSON.stringify(transactions))
 
-    //console.log('transactions', transactions)
-    // console.log('returnVal', returnVal)
-    //identify and format dates
     for (let key in returnVal) {
       let periodDetectedFlag = false
       const dates = returnVal[key]['dates']
@@ -95,7 +99,7 @@ const utils = {
         const element = dates[i]['date']
         const amount = dates[i]['amount']
         const formattedDate = parseISO(element)
-        // console.log(element, 'formed', formattedDate)
+
         formattedDates.push([formattedDate, amount])
       }
       //sort dates for comparison
@@ -248,7 +252,6 @@ const utils = {
           }
         }
       }
-    //console.log(' periodicity return',returnVal)
     return returnVal
   },
   addPastTransactions(transactions) {
@@ -304,9 +307,8 @@ const utils = {
   },
   formatRecurringValueList(transactions) {
     const returnVal = []
-    //console.log(transactions)
+
     for (let key in transactions) {
-      //console.log(transactions[key])
       const description = transactions[key]
       const recurringValueTotal = transactions[key]?.['recurringValueTotal'] ?? null
 
@@ -317,46 +319,72 @@ const utils = {
         })
       }
     }
-    //console.log(returnVal)
     return returnVal
   },
-  // determineWindowLimit(transactions) {
-  //   console.log(transactions)
-  //   const returnVal = []
-  //   const windowLimit = 2000000
-  //   let largestAmount
-  //   // const startDate = new Date()
-  //   // const endDate =  new Date(2022, 1, 9)
-  //   // const diff = differenceInDays(endDate, startDate)
-  //   // console.log(dates)
+  determineWindowLimit(transactions) {
 
-  //   for (let key in transactions) {
-  //     let dates = transactions[key]['dates']
-  //     let left = 0 //set pointers for moving window search on dates array
-  //     let right = 1
-  //     // console.log(dates)
-  //     while (right < dates.length) {
-  //       let windowAmount = 0
+    //for this function we use the original (organized and unfiltered) data so all transactions are considered.
+    // This means we have to re-parse and sort dates
+    const transactionsCopy = JSON.parse(JSON.stringify(transactions))
+    
+    for (let key in transactionsCopy) {
+      const dates = transactionsCopy[key]['dates']
+      const formattedDates = []
 
-  //       let idxLeft = dates[left]
-  //       let idxRight = dates[right]
+      for (let i = 0; i < dates.length; i++) {
+        const element = dates[i]['date']
+        const amount = dates[i]['amount']
+        const formattedDate = parseISO(element)
 
-  //       let dateLeft = idxLeft[0]
-  //       let dateRight = idxRight[0]
-  //       let diff = differenceInDays(dateRight, dateLeft)
+        formattedDates.push([formattedDate, amount])
+      }
+      //sort dates for comparison
+      transactionsCopy[key]['dates'] = formattedDates.sort((a,b) => a[0] - b[0])
+    }
 
-  //       let amountLeft = idxLeft[1]
-  //       let amountRight = idxRight[1]
+    const returnVal = []
+    const windowLimit = 2000000
+    
 
-  //       // console.log(diff)
-  //       break
+    for (let key in transactions) {
+      let dates = transactionsCopy[key]['dates']
+      let left = 0 //set pointers for moving window search on dates array
+      let right = 1
+      let largestAmount = -Infinity
+      let windowAmount
+      //console.log(dates)
+      while (right <= dates.length - 1) {
+        let idxLeft = dates[left]
+        let idxRight = dates[right]
 
-  //     }
+        let dateLeft = idxLeft[0]
+        let dateRight = idxRight[0]
+        let diff = differenceInDays(dateRight, dateLeft)
 
-  //     }
+        let amountLeft = idxLeft[1]
+        let amountRight = idxRight[1]
 
-  //     }
-   
+        windowAmount = amountLeft
+
+        //console.log(left, right, diff, windowAmount)
+
+        if (diff <= 31) {
+          windowAmount +=amountRight
+          right ++
+        } 
+        else if (windowAmount > windowLimit) {
+          largestAmount = Math.max(largestAmount, windowAmount)
+          left = right
+          right = left + 1
+        } else {
+          left = right
+          right = left + 1
+        }
+      }
+    } 
+    // console.log(transactionsCopy)
+    // console.log(largestAmount)
+  }
 }
 
 module.exports = utils
