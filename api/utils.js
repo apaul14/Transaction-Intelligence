@@ -10,6 +10,7 @@ const sub = require('date-fns/sub')
 const isSameYear = require('date-fns/isSameYear')
 const isSameMonth = require('date-fns/isSameMonth')
 const isSameWeek = require('date-fns/isSameWeek')
+const parseISO = require('date-fns/parseISO')
 
 
 
@@ -82,7 +83,7 @@ const utils = {
   determineTransactionPeriodicity(transactions) {
     const returnVal = JSON.parse(JSON.stringify(transactions))
 
-    console.log('transactions', transactions)
+    //console.log('transactions', transactions)
     // console.log('returnVal', returnVal)
     //identify and format dates
     for (let key in returnVal) {
@@ -93,8 +94,8 @@ const utils = {
       for (let i = 0; i < dates.length; i++) {
         const element = dates[i]['date']
         const amount = dates[i]['amount']
-        const formattedDate = new Date(element)
-
+        const formattedDate = parseISO(element)
+        // console.log(element, 'formed', formattedDate)
         formattedDates.push([formattedDate, amount])
       }
       //sort dates for comparison
@@ -191,18 +192,22 @@ const utils = {
     return returnVal
   },
   validateCurrentRecurringTransactions(transactions) {
-    const returnVal = transactions
+    const returnVal = JSON.parse(JSON.stringify(transactions))
+
     //validate recurring transacation has occured past 3 periods
     const currentDate = new Date()
-    //console.log(returnVal)
+
     for (let key in returnVal) {
       const dates = returnVal[key]['dates']
+
+      //must return dates to ISO from strings created during deep copying for use with date lib
+      dates.forEach(date => date[0] = parseISO(date[0]))
+
       const mostRecentTransaction = dates[dates.length - 1][0]
       const secondMostRecentTransaction = dates[dates.length - 2] ? dates[dates.length - 2][0] : null
       const thirdMostRecentTransaction = dates[dates.length - 3] ? dates[dates.length - 3][0] : null
       const periodicity = returnVal[key]['periodicity']
-      //console.log(periodicity, key)
-      //console.log(secondMostRecentTransaction, thirdMostRecentTransaction)
+  
       if (!periodicity || !secondMostRecentTransaction || !thirdMostRecentTransaction) { //put this before transaction assigments to shorten ( if dates.length !> 3 delete)
         delete returnVal[key]
         continue
@@ -212,64 +217,38 @@ const utils = {
         const firstPrevYear = subYears(currentDate, 1)
         const secondPrevYear = subYears(currentDate, 2)
         const thirdPrevYear = subYears(currentDate, 3)
-        // console.log(dates)
-        // console.log(isSameYear(mostRecentPeriod, firstPrevYear))
-        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
-        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
-
+    
         if (!isSameYear(mostRecentTransaction, firstPrevYear) 
           || !isSameYear(secondMostRecentTransaction, secondPrevYear)
           || !isSameYear(thirdMostRecentTransaction, thirdPrevYear)) {
             delete returnVal[key]
-            //console.log("nope year", key)
-            //return false
-          } else {
-            //console.log("yup year", key)
-            //return true
-          }
+        } 
       }
+        
       if (periodicity === 'monthly') {
         const firstPrevMonth = sub(currentDate, { months: 1 })
         const secondPrevMonth = sub(currentDate, { months: 2 })
         const thirdPrevMonth = sub(currentDate, { months: 3 })
-        // console.log(dates)
-        // console.log( firstPrevMonth, firstPrevMonth)
-        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
-        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
-
+  
         if (!isSameMonth(mostRecentTransaction, firstPrevMonth) 
           || !isSameMonth(secondMostRecentTransaction, secondPrevMonth)
           || !isSameMonth(thirdMostRecentTransaction, thirdPrevMonth)) {
             delete returnVal[key]
-            //console.log("nope month", key)
-            //return false
-          } else {
-            //console.log("yup month", key)
-            //return true
-          }
+        } 
       }
       if (periodicity === 'weekly') {
         const firstPrevWeek = sub(currentDate, { weeks: 1 })
         const secondPrevWeek = sub(currentDate, { weeks: 2 })
         const thirdPrevWeek = sub(currentDate, { weeks: 3 })
-        //console.log('hello')
-        // console.log( firstPrevMonth, firstPrevMonth)
-        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
-        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
 
         if (!isSameWeek(mostRecentTransaction, firstPrevWeek) 
           || !isSameWeek(secondMostRecentTransaction, secondPrevWeek)
           || !isSameWeek(thirdMostRecentTransaction, thirdPrevWeek)) {
-            //console.log("nope week", key)
-            //return false
             delete returnVal[key]
-          } else {
-            //console.log("yup week", key)
-            //return true
           }
+        }
       }
-    }
-    //console.log(returnVal)
+    console.log(' periodicity return',returnVal)
     return returnVal
   },
   addPastTransactions(transactions) {
