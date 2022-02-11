@@ -248,24 +248,22 @@ const utils = {
           }
         }
       }
-    console.log(' periodicity return',returnVal)
+    //console.log(' periodicity return',returnVal)
     return returnVal
   },
   addPastTransactions(transactions) {
-    const returnVal = transactions
+    const returnVal = JSON.parse(JSON.stringify(transactions))
     
     for (let key in returnVal) {
       let total = 0
-      let dates = returnVal[key]['dates']
+      const dates = returnVal[key]['dates']
 
       for (let i = 0; i < dates.length; i ++ ) {
-        let amount = dates[i][1]
+        const amount = dates[i][1]
         total += amount
       }
-      //console.log(total)
       returnVal[key]['pastTransactionsTotal'] = total
     }
-    //console.log(returnVal)
     return returnVal
   },
   addFutureTransactions(transactions) {
