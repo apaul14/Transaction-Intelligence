@@ -17,7 +17,7 @@ const parseISO = require('date-fns/parseISO')
 
 const utils = {
 
-  findRecurringTransactions (transactions){ //break this up into different services for pt 1, 2, 3, 4 ?????
+  findRecurringTransactions (transactions) { //break this up into different services for pt 1, 2, 3, 4 ?????
     const returnVal = []
     // console.log('first log->',transactions)
     // console.log(this.compareTransactionDescriptions(transactions))
@@ -39,7 +39,7 @@ const utils = {
     //part 3
     //const windowLimit = this.determineWindowLimit(transactionPeriodicity)
   },
-  compareTransactionDescriptions (transactions){
+  compareTransactionDescriptions (transactions) {
     const recurring = {}
 
     // Take in the unsorted list of transactions and create groups of transactions
@@ -286,22 +286,20 @@ const utils = {
     return returnVal
   },
   determineRecurringValueTotals(transactions) {
-    const returnVal = transactions
-    //console.log(returnVal)
+    const returnVal = JSON.parse(JSON.stringify(transactions))
+
     for (let key in returnVal) {
       const futureTransactionsTotal = returnVal[key]['futureTransactionsTotal']
       const pastTransactionsTotal = returnVal[key]['pastTransactionsTotal']
       const recurringValueTotal = futureTransactionsTotal + pastTransactionsTotal
-      //console.log('recurring total',recurringValueTotal)
-
+  
       //compute recurringTotalValue to return if sum is less than 0
-      if (recurringValueTotal >= 0){
+      if (recurringValueTotal >= 0) {
         continue
       } else {
         returnVal[key]['recurringValueTotal'] = recurringValueTotal
       }
     }
-    //console.log(returnVal)
     return returnVal
   },
   formatRecurringValueList(transactions) {
