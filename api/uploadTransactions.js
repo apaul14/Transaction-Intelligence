@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+const utils = require('./utils')
 
 const mockDataStore = []
 
@@ -11,10 +12,25 @@ const mockDataStore = []
 
 router.post('/', async (req, res, next) => {
   try {
-    console.log(req.body)
+    //console.log(req.body)
     mockDataStore.push(req.body)
+    const data = mockDataStore
+
+    const response = {
+      recurringTransactions: [],
+      recurringValues: [],
+      windowLimits: [],
+      counterPartyLimits: []
+    }
+    //console.log('data in ->', data)
+
     
-    res.status(201).send(mockDataStore)
+    // const recurringTransactions = utils.findRecurringTransactions(mockDataStore[0].transactions)
+    const recurringTransactions = utils.findRecurringTransactions(req.body.transactions)
+    for (let key in recurringTransactions) response.recurringTransactions.push(recurringTransactions)
+
+
+    res.status(201).send(response)
   } catch (error) {
     next(error)
   }
