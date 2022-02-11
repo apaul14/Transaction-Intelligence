@@ -80,107 +80,80 @@ const utils = {
     return recurring
   },
   determineTransactionPeriodicity(transactions) {
-    const returnVal = transactions
-    //console.log('analyze', transactions)
+    const returnVal = JSON.parse(JSON.stringify(transactions))
+
+    console.log('transactions', transactions)
+    // console.log('returnVal', returnVal)
     //identify and format dates
     for (let key in returnVal) {
       let periodDetectedFlag = false
-      let dates = returnVal[key]['dates']
-      let formattedDates = []
-      //console.log('dates', dates)
+      const dates = returnVal[key]['dates']
+      const formattedDates = []
       
       for (let i = 0; i < dates.length; i++) {
-        let element = dates[i]['date']
-        let amount = dates[i]['amount']
-        let formattedDate = new Date(element)
-        //formattedDates.push({'date': formattedDate, amount })
+        const element = dates[i]['date']
+        const amount = dates[i]['amount']
+        const formattedDate = new Date(element)
+
         formattedDates.push([formattedDate, amount])
-        //console.log(formattedDates)
-        //let formattedDate = formatDate(element, 'w')
-        //console.log('elem', element, formattedDate)
-        // for (let j = 1; j < dates.length; j++) {
-
-        // }
-
       }
+      //sort dates for comparison
       returnVal[key].dates = formattedDates.sort((a,b) => a[0] - b[0])
-      //console.log('datesarray', formattedDates)
-      //console.log(transactions[key]['dates'])
 
       //test against comparison windows. each subsequent test only runs if periodicity not detected previously
         //yearly
-        if (!periodDetectedFlag) {
-          for (let i = 0; i <= formattedDates.length - 2; i++) {
-            let firstDate = formattedDates[i][0]
-            let secondDate = formattedDates[i + 1][0]
-            //console.log(firstDate,secondDate)
+          if (!periodDetectedFlag) {
+            for (let i = 0; i <= formattedDates.length - 2; i++) {
+              const firstDate = formattedDates[i][0]
+              const secondDate = formattedDates[i + 1][0]
+
+              //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
+              const paddedDate = addDays(secondDate, 60)
+
+              if (differenceInYears(paddedDate, firstDate) !== 1) {
+                break
+              }
+              else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+                returnVal[key]['periodicity'] = 'annual'
+                periodDetectedFlag = true
+              }
+            }
+          }
+        //monthly
+          if (!periodDetectedFlag) {
+            for (let i = 0; i <= formattedDates.length - 2; i++) {
+            const firstDate = formattedDates[i][0]
+            const secondDate = formattedDates[i + 1][0]
             //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
-            let paddedDate = addDays(secondDate, 60)
-            //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
-            //console.log(i, firstDate, paddedDate)
-            //console.log(formattedDates.length, i === formattedDates.length - 2)
-            //console.log(formattedDates)
-            if (differenceInYears(paddedDate, firstDate) !== 1) {
-              //console.log(firstDate, paddedDate)
+            const paddedDate = addDays(secondDate, 7)
+
+            if (differenceInMonths(paddedDate, firstDate) !== 1) {
               break
             }
-            else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-              // console.log(formattedDates.length, i, paddedDate)
-              //console.log('yearly')
-              returnVal[key]['periodicity'] = 'annual'
-              //console.log(transactions)
+            else if (differenceInMonths(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+              returnVal[key]['periodicity'] = 'monthly'
               periodDetectedFlag = true
             }
           }
         }
-          //monthly
+      //weekly
         if (!periodDetectedFlag) {
           for (let i = 0; i <= formattedDates.length - 2; i++) {
-          let firstDate = formattedDates[i][0]
-          let secondDate = formattedDates[i + 1][0]
-          //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
-          let paddedDate = addDays(secondDate, 7)
-          //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
-          // console.log(i, firstDate, paddedDate)
-          // console.log(formattedDates.length, i === formattedDates.length - 2)
-          if (differenceInMonths(paddedDate, firstDate) !== 1) {
-            //console.log(firstDate, paddedDate)
+          const firstDate = formattedDates[i][0]
+          const secondDate = formattedDates[i + 1][0]
+          //add days to acceptance window in order to account for weekends, slightly off-schedule billing, etc.
+          const paddedDate = addDays(secondDate, 3)
+    
+          if (differenceInWeeks(paddedDate, firstDate) !== 1) {
             break
           }
-          else if (differenceInMonths(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-            // console.log(formattedDates.length, i, paddedDate)
-            //console.log('monthly')
-            returnVal[key]['periodicity'] = 'monthly'
-            // console.log(transactions)
+          else if (differenceInWeeks(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+            returnVal[key]['periodicity'] = 'weekly'
             periodDetectedFlag = true
           }
         }
       }
-      if (!periodDetectedFlag) {
-        for (let i = 0; i <= formattedDates.length - 2; i++) {
-        let firstDate = formattedDates[i][0]
-        let secondDate = formattedDates[i + 1][0]
-        //add days to acceptance window in order to account for weekends, slightly off-schedule billing, etc.
-        let paddedDate = addDays(secondDate, 3)
-        //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
-        // console.log(i, firstDate, paddedDate)
-        // console.log(formattedDates.length, i === formattedDates.length - 2)
-        if (differenceInWeeks(paddedDate, firstDate) !== 1) {
-          // console.log(firstDate, paddedDate)
-          break
-        }
-        else if (differenceInWeeks(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-          //console.log(formattedDates.length, i, paddedDate)
-          //console.log('weekly')
-          returnVal[key]['periodicity'] = 'weekly'
-          //console.log(transactions)
-          periodDetectedFlag = true
-        }
-      }
     }
-
-    }
-    //console.log(returnVal)
     return returnVal
   },
   findAverageandStandardDeviation(transactions) {
