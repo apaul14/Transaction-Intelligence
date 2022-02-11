@@ -10,24 +10,28 @@ const sub = require('date-fns/sub')
 const isSameYear = require('date-fns/isSameYear')
 const isSameMonth = require('date-fns/isSameMonth')
 const isSameWeek = require('date-fns/isSameWeek')
+const parseISO = require('date-fns/parseISO')
 
 
 
 
 const utils = {
 
-  findRecurringTransactions (transactions){ //break this up into different services for pt 1, 2, 3, 4 ?????
-    const returnVal = []
-    // console.log('first log->',transactions)
-    // console.log(this.compareTransactionDescriptions(transactions))
-
+  processTransactions (transactions) {
+    const response = {
+      recurringTransactions: [],
+      recurringValues: [],
+      windowLimits: [],
+      counterPartyLimits: []
+    }
+  
     const recurringTransactions = this.compareTransactionDescriptions(transactions)
-    // let recurring = this.compareTransactionDescriptions(transactions)
-    // for (let key in recurringTransactions) {
-    //   this.findAverageAmount(recurringTransactions[key])
-    // }
+  
     const calculateMeanAndSTDDEV = this.findAverageandStandardDeviation(recurringTransactions)
     const transactionPeriodicity = this.determineTransactionPeriodicity(calculateMeanAndSTDDEV) //push this to response
+
+    response.recurringTransactions.push(transactionPeriodicity)
+
     //part 2
     const validateCurrentRecurringTransactions = this.validateCurrentRecurringTransactions(transactionPeriodicity)
     const addPastTransactions = this.addPastTransactions(validateCurrentRecurringTransactions)
@@ -35,10 +39,14 @@ const utils = {
     const determineRecurringValueTotals = this.determineRecurringValueTotals(addFutureTransactions)
     const formatRecurringValueList = this.formatRecurringValueList(determineRecurringValueTotals) //push this to response
 
+    response.recurringValues.push(formatRecurringValueList)
+
     //part 3
-    const windowLimit = this.determineWindowLimit(transactionPeriodicity)
+    const windowLimit = this.determineWindowLimit(recurringTransactions)
+    console.log(response)
+    return response
   },
-  compareTransactionDescriptions (transactions){
+  compareTransactionDescriptions (transactions) {
     const recurring = {}
 
     // Take in the unsorted list of transactions and create groups of transactions
@@ -80,133 +88,103 @@ const utils = {
     return recurring
   },
   determineTransactionPeriodicity(transactions) {
-    const returnVal = transactions
-    //console.log('analyze', transactions)
-    //identify and format dates
+    const returnVal = JSON.parse(JSON.stringify(transactions))
+
     for (let key in returnVal) {
       let periodDetectedFlag = false
-      let dates = returnVal[key]['dates']
-      let formattedDates = []
-      //console.log('dates', dates)
+      const dates = returnVal[key]['dates']
+      const formattedDates = []
       
       for (let i = 0; i < dates.length; i++) {
-        let element = dates[i]['date']
-        let amount = dates[i]['amount']
-        let formattedDate = new Date(element)
-        //formattedDates.push({'date': formattedDate, amount })
+        const element = dates[i]['date']
+        const amount = dates[i]['amount']
+        const formattedDate = parseISO(element)
+
         formattedDates.push([formattedDate, amount])
-        //console.log(formattedDates)
-        //let formattedDate = formatDate(element, 'w')
-        //console.log('elem', element, formattedDate)
-        // for (let j = 1; j < dates.length; j++) {
-
-        // }
-
       }
+      //sort dates for comparison
       returnVal[key].dates = formattedDates.sort((a,b) => a[0] - b[0])
-      //console.log('datesarray', formattedDates)
-      //console.log(transactions[key]['dates'])
 
       //test against comparison windows. each subsequent test only runs if periodicity not detected previously
         //yearly
-        if (!periodDetectedFlag) {
-          for (let i = 0; i <= formattedDates.length - 2; i++) {
-            let firstDate = formattedDates[i][0]
-            let secondDate = formattedDates[i + 1][0]
-            //console.log(firstDate,secondDate)
+          if (!periodDetectedFlag) {
+            for (let i = 0; i <= formattedDates.length - 2; i++) {
+              const firstDate = formattedDates[i][0]
+              const secondDate = formattedDates[i + 1][0]
+
+              //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
+              const paddedDate = addDays(secondDate, 60)
+
+              if (differenceInYears(paddedDate, firstDate) !== 1) {
+                break
+              }
+              else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+                returnVal[key]['periodicity'] = 'annual'
+                periodDetectedFlag = true
+              }
+            }
+          }
+        //monthly
+          if (!periodDetectedFlag) {
+            for (let i = 0; i <= formattedDates.length - 2; i++) {
+            const firstDate = formattedDates[i][0]
+            const secondDate = formattedDates[i + 1][0]
             //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
-            let paddedDate = addDays(secondDate, 60)
-            //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
-            //console.log(i, firstDate, paddedDate)
-            //console.log(formattedDates.length, i === formattedDates.length - 2)
-            //console.log(formattedDates)
-            if (differenceInYears(paddedDate, firstDate) !== 1) {
-              //console.log(firstDate, paddedDate)
+            const paddedDate = addDays(secondDate, 7)
+
+            if (differenceInMonths(paddedDate, firstDate) !== 1) {
               break
             }
-            else if (differenceInYears(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-              // console.log(formattedDates.length, i, paddedDate)
-              //console.log('yearly')
-              returnVal[key]['periodicity'] = 'annual'
-              //console.log(transactions)
+            else if (differenceInMonths(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+              returnVal[key]['periodicity'] = 'monthly'
               periodDetectedFlag = true
             }
           }
         }
-          //monthly
+      //weekly
         if (!periodDetectedFlag) {
           for (let i = 0; i <= formattedDates.length - 2; i++) {
-          let firstDate = formattedDates[i][0]
-          let secondDate = formattedDates[i + 1][0]
-          //add days to acceptance window in order to account for leap year, slightly off-schedule billing, etc.
-          let paddedDate = addDays(secondDate, 7)
-          //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
-          // console.log(i, firstDate, paddedDate)
-          // console.log(formattedDates.length, i === formattedDates.length - 2)
-          if (differenceInMonths(paddedDate, firstDate) !== 1) {
-            //console.log(firstDate, paddedDate)
+          const firstDate = formattedDates[i][0]
+          const secondDate = formattedDates[i + 1][0]
+          //add days to acceptance window in order to account for weekends, slightly off-schedule billing, etc.
+          const paddedDate = addDays(secondDate, 3)
+    
+          if (differenceInWeeks(paddedDate, firstDate) !== 1) {
             break
           }
-          else if (differenceInMonths(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-            // console.log(formattedDates.length, i, paddedDate)
-            //console.log('monthly')
-            returnVal[key]['periodicity'] = 'monthly'
-            // console.log(transactions)
+          else if (differenceInWeeks(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
+            returnVal[key]['periodicity'] = 'weekly'
             periodDetectedFlag = true
           }
         }
       }
-      if (!periodDetectedFlag) {
-        for (let i = 0; i <= formattedDates.length - 2; i++) {
-        let firstDate = formattedDates[i][0]
-        let secondDate = formattedDates[i + 1][0]
-        //add days to acceptance window in order to account for weekends, slightly off-schedule billing, etc.
-        let paddedDate = addDays(secondDate, 3)
-        //console.log('years', differenceInYears(paddedDate, firstDate),'months', differenceInMonths(secondDate, firstDate),'days', differenceInDays(secondDate, firstDate))
-        // console.log(i, firstDate, paddedDate)
-        // console.log(formattedDates.length, i === formattedDates.length - 2)
-        if (differenceInWeeks(paddedDate, firstDate) !== 1) {
-          // console.log(firstDate, paddedDate)
-          break
-        }
-        else if (differenceInWeeks(paddedDate, firstDate) === 1 && i === formattedDates.length - 2) {
-          //console.log(formattedDates.length, i, paddedDate)
-          //console.log('weekly')
-          returnVal[key]['periodicity'] = 'weekly'
-          //console.log(transactions)
-          periodDetectedFlag = true
-        }
-      }
     }
-
-    }
-    //console.log(returnVal)
     return returnVal
   },
   findAverageandStandardDeviation(transactions) {
-    let returnVal = transactions
-    //console.log('trans', transactions)
+    const returnVal = JSON.parse(JSON.stringify(transactions))
+    
     for (let key in returnVal) {
-      let transactionDates = returnVal[key]['dates']
-      let transactionAmounts = []
-
+      const transactionDates = returnVal[key]['dates']
+      const transactionAmounts = []
+      
       for (let i = 0; i < transactionDates.length; i++) {
-        let date = transactionDates[i]
+        const date = transactionDates[i]
         transactionAmounts.push(date['amount'])
-        //console.log('amt', transactionAmounts)
       }
+
       //calculate Average
-      let averageAmount = transactionAmounts.reduce((acc, cum) => acc + cum, 0) / transactionAmounts.length
+      const averageAmount = transactionAmounts.reduce((acc, cum) => acc + cum, 0) / transactionAmounts.length
       returnVal[key]['averageAmount'] = averageAmount
 
        //calculate variance
-      let squareDiffs = transactionAmounts.map((value) => {
+      const squareDiffs = transactionAmounts.map((value) => {
         let diff = value - averageAmount;
         diff *= diff
         return diff
       })
-      let variance = squareDiffs.reduce((acc, cum) => acc + cum, 0) / squareDiffs.length
-      //console.log('variance', squareDiffs, variance)
+      const variance = squareDiffs.reduce((acc, cum) => acc + cum, 0) / squareDiffs.length
+
       //calculate SD 
       let stdDeviation = Math.sqrt(variance)
       stdDeviation = +stdDeviation.toFixed(2)
@@ -215,23 +193,25 @@ const utils = {
       if (stdDeviation < 2.5) returnVal[key]['stdDeviation'] = stdDeviation
       else delete returnVal[key]
     }
-    
-    //console.log('trans2', transactions)
     return returnVal
   },
   validateCurrentRecurringTransactions(transactions) {
-    const returnVal = transactions
+    const returnVal = JSON.parse(JSON.stringify(transactions))
+
     //validate recurring transacation has occured past 3 periods
     const currentDate = new Date()
-    //console.log(returnVal)
+
     for (let key in returnVal) {
       const dates = returnVal[key]['dates']
+
+      //must return dates to ISO from strings created during deep copying for use with date lib
+      dates.forEach(date => date[0] = parseISO(date[0]))
+
       const mostRecentTransaction = dates[dates.length - 1][0]
       const secondMostRecentTransaction = dates[dates.length - 2] ? dates[dates.length - 2][0] : null
       const thirdMostRecentTransaction = dates[dates.length - 3] ? dates[dates.length - 3][0] : null
       const periodicity = returnVal[key]['periodicity']
-      //console.log(periodicity, key)
-      //console.log(secondMostRecentTransaction, thirdMostRecentTransaction)
+  
       if (!periodicity || !secondMostRecentTransaction || !thirdMostRecentTransaction) { //put this before transaction assigments to shorten ( if dates.length !> 3 delete)
         delete returnVal[key]
         continue
@@ -241,85 +221,56 @@ const utils = {
         const firstPrevYear = subYears(currentDate, 1)
         const secondPrevYear = subYears(currentDate, 2)
         const thirdPrevYear = subYears(currentDate, 3)
-        // console.log(dates)
-        // console.log(isSameYear(mostRecentPeriod, firstPrevYear))
-        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
-        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
-
+    
         if (!isSameYear(mostRecentTransaction, firstPrevYear) 
           || !isSameYear(secondMostRecentTransaction, secondPrevYear)
           || !isSameYear(thirdMostRecentTransaction, thirdPrevYear)) {
             delete returnVal[key]
-            //console.log("nope year", key)
-            //return false
-          } else {
-            //console.log("yup year", key)
-            //return true
-          }
+        } 
       }
+        
       if (periodicity === 'monthly') {
         const firstPrevMonth = sub(currentDate, { months: 1 })
         const secondPrevMonth = sub(currentDate, { months: 2 })
         const thirdPrevMonth = sub(currentDate, { months: 3 })
-        // console.log(dates)
-        // console.log( firstPrevMonth, firstPrevMonth)
-        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
-        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
-
+  
         if (!isSameMonth(mostRecentTransaction, firstPrevMonth) 
           || !isSameMonth(secondMostRecentTransaction, secondPrevMonth)
           || !isSameMonth(thirdMostRecentTransaction, thirdPrevMonth)) {
             delete returnVal[key]
-            //console.log("nope month", key)
-            //return false
-          } else {
-            //console.log("yup month", key)
-            //return true
-          }
+        } 
       }
       if (periodicity === 'weekly') {
         const firstPrevWeek = sub(currentDate, { weeks: 1 })
         const secondPrevWeek = sub(currentDate, { weeks: 2 })
         const thirdPrevWeek = sub(currentDate, { weeks: 3 })
-        //console.log('hello')
-        // console.log( firstPrevMonth, firstPrevMonth)
-        // console.log(isSameYear(secondMostRecentPeriod, secondPrevYear))
-        // console.log(isSameYear(thirdMostRecentPeriod, thirdPrevYear), thirdPrevYear, thirdMostRecentPeriod)
 
         if (!isSameWeek(mostRecentTransaction, firstPrevWeek) 
           || !isSameWeek(secondMostRecentTransaction, secondPrevWeek)
           || !isSameWeek(thirdMostRecentTransaction, thirdPrevWeek)) {
-            //console.log("nope week", key)
-            //return false
             delete returnVal[key]
-          } else {
-            //console.log("yup week", key)
-            //return true
           }
+        }
       }
-    }
-    //console.log(returnVal)
     return returnVal
   },
   addPastTransactions(transactions) {
-    const returnVal = transactions
+    const returnVal = JSON.parse(JSON.stringify(transactions))
     
     for (let key in returnVal) {
       let total = 0
-      let dates = returnVal[key]['dates']
+      const dates = returnVal[key]['dates']
 
       for (let i = 0; i < dates.length; i ++ ) {
-        let amount = dates[i][1]
+        const amount = dates[i][1]
         total += amount
       }
-      //console.log(total)
       returnVal[key]['pastTransactionsTotal'] = total
     }
-    //console.log(returnVal)
     return returnVal
   },
   addFutureTransactions(transactions) {
-    const returnVal = transactions
+    const returnVal = JSON.parse(JSON.stringify(transactions))
 
     for (let key in returnVal) {
       const periodicity = returnVal[key]['periodicity']
@@ -336,32 +287,28 @@ const utils = {
       }
     }
     return returnVal
-    //console.log(returnVal)
   },
   determineRecurringValueTotals(transactions) {
-    const returnVal = transactions
-    //console.log(returnVal)
+    const returnVal = JSON.parse(JSON.stringify(transactions))
+
     for (let key in returnVal) {
       const futureTransactionsTotal = returnVal[key]['futureTransactionsTotal']
       const pastTransactionsTotal = returnVal[key]['pastTransactionsTotal']
       const recurringValueTotal = futureTransactionsTotal + pastTransactionsTotal
-      //console.log('recurring total',recurringValueTotal)
-
+  
       //compute recurringTotalValue to return if sum is less than 0
-      if (recurringValueTotal >= 0){
+      if (recurringValueTotal >= 0) {
         continue
       } else {
         returnVal[key]['recurringValueTotal'] = recurringValueTotal
       }
     }
-    //console.log(returnVal)
     return returnVal
   },
   formatRecurringValueList(transactions) {
     const returnVal = []
-    //console.log(transactions)
+
     for (let key in transactions) {
-      //console.log(transactions[key])
       const description = transactions[key]
       const recurringValueTotal = transactions[key]?.['recurringValueTotal'] ?? null
 
@@ -372,46 +319,72 @@ const utils = {
         })
       }
     }
-    //console.log(returnVal)
     return returnVal
   },
-  // determineWindowLimit(transactions) {
-  //   console.log(transactions)
-  //   const returnVal = []
-  //   const windowLimit = 2000000
-  //   let largestAmount
-  //   // const startDate = new Date()
-  //   // const endDate =  new Date(2022, 1, 9)
-  //   // const diff = differenceInDays(endDate, startDate)
-  //   // console.log(dates)
+  determineWindowLimit(transactions) {
 
-  //   for (let key in transactions) {
-  //     let dates = transactions[key]['dates']
-  //     let left = 0 //set pointers for moving window search on dates array
-  //     let right = 1
-  //     // console.log(dates)
-  //     while (right < dates.length) {
-  //       let windowAmount = 0
+    //for this function we use the original (organized and unfiltered) data so all transactions are considered.
+    // This means we have to re-parse and sort dates
+    const transactionsCopy = JSON.parse(JSON.stringify(transactions))
+    
+    for (let key in transactionsCopy) {
+      const dates = transactionsCopy[key]['dates']
+      const formattedDates = []
 
-  //       let idxLeft = dates[left]
-  //       let idxRight = dates[right]
+      for (let i = 0; i < dates.length; i++) {
+        const element = dates[i]['date']
+        const amount = dates[i]['amount']
+        const formattedDate = parseISO(element)
 
-  //       let dateLeft = idxLeft[0]
-  //       let dateRight = idxRight[0]
-  //       let diff = differenceInDays(dateRight, dateLeft)
+        formattedDates.push([formattedDate, amount])
+      }
+      //sort dates for comparison
+      transactionsCopy[key]['dates'] = formattedDates.sort((a,b) => a[0] - b[0])
+    }
 
-  //       let amountLeft = idxLeft[1]
-  //       let amountRight = idxRight[1]
+    const returnVal = []
+    const windowLimit = 2000000
+    
 
-  //       // console.log(diff)
-  //       break
+    for (let key in transactions) {
+      let dates = transactionsCopy[key]['dates']
+      let left = 0 //set pointers for moving window search on dates array
+      let right = 1
+      let largestAmount = -Infinity
+      let windowAmount
+      //console.log(dates)
+      while (right <= dates.length - 1) {
+        let idxLeft = dates[left]
+        let idxRight = dates[right]
 
-  //     }
+        let dateLeft = idxLeft[0]
+        let dateRight = idxRight[0]
+        let diff = differenceInDays(dateRight, dateLeft)
 
-  //     }
+        let amountLeft = idxLeft[1]
+        let amountRight = idxRight[1]
 
-  //     }
-   
+        windowAmount = amountLeft
+
+        //console.log(left, right, diff, windowAmount)
+
+        if (diff <= 31) {
+          windowAmount +=amountRight
+          right ++
+        } 
+        else if (windowAmount > windowLimit) {
+          largestAmount = Math.max(largestAmount, windowAmount)
+          left = right
+          right = left + 1
+        } else {
+          left = right
+          right = left + 1
+        }
+      }
+    } 
+    // console.log(transactionsCopy)
+    // console.log(largestAmount)
+  }
 }
 
 module.exports = utils
