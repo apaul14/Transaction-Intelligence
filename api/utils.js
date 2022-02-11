@@ -267,7 +267,7 @@ const utils = {
     return returnVal
   },
   addFutureTransactions(transactions) {
-    const returnVal = transactions
+    const returnVal = JSON.parse(JSON.stringify(transactions))
 
     for (let key in returnVal) {
       const periodicity = returnVal[key]['periodicity']
@@ -284,7 +284,6 @@ const utils = {
       }
     }
     return returnVal
-    //console.log(returnVal)
   },
   determineRecurringValueTotals(transactions) {
     const returnVal = transactions
