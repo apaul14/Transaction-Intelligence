@@ -36,7 +36,7 @@ const utils = {
     const formatRecurringValueList = this.formatRecurringValueList(determineRecurringValueTotals) //push this to response
 
     //part 3
-    const windowLimit = this.determineWindowLimit(transactionPeriodicity)
+    //const windowLimit = this.determineWindowLimit(transactionPeriodicity)
   },
   compareTransactionDescriptions (transactions){
     const recurring = {}
@@ -184,29 +184,29 @@ const utils = {
     return returnVal
   },
   findAverageandStandardDeviation(transactions) {
-    let returnVal = transactions
-    //console.log('trans', transactions)
+    const returnVal = JSON.parse(JSON.stringify(transactions))
+    
     for (let key in returnVal) {
-      let transactionDates = returnVal[key]['dates']
-      let transactionAmounts = []
-
+      const transactionDates = returnVal[key]['dates']
+      const transactionAmounts = []
+      
       for (let i = 0; i < transactionDates.length; i++) {
-        let date = transactionDates[i]
+        const date = transactionDates[i]
         transactionAmounts.push(date['amount'])
-        //console.log('amt', transactionAmounts)
       }
+
       //calculate Average
-      let averageAmount = transactionAmounts.reduce((acc, cum) => acc + cum, 0) / transactionAmounts.length
+      const averageAmount = transactionAmounts.reduce((acc, cum) => acc + cum, 0) / transactionAmounts.length
       returnVal[key]['averageAmount'] = averageAmount
 
        //calculate variance
-      let squareDiffs = transactionAmounts.map((value) => {
+      const squareDiffs = transactionAmounts.map((value) => {
         let diff = value - averageAmount;
         diff *= diff
         return diff
       })
-      let variance = squareDiffs.reduce((acc, cum) => acc + cum, 0) / squareDiffs.length
-      //console.log('variance', squareDiffs, variance)
+      const variance = squareDiffs.reduce((acc, cum) => acc + cum, 0) / squareDiffs.length
+
       //calculate SD 
       let stdDeviation = Math.sqrt(variance)
       stdDeviation = +stdDeviation.toFixed(2)
@@ -215,8 +215,6 @@ const utils = {
       if (stdDeviation < 2.5) returnVal[key]['stdDeviation'] = stdDeviation
       else delete returnVal[key]
     }
-    
-    //console.log('trans2', transactions)
     return returnVal
   },
   validateCurrentRecurringTransactions(transactions) {
