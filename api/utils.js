@@ -2,6 +2,7 @@ const formatDate = require('date-fns/format')
 const differenceInMonths = require('date-fns/differenceInMonths')
 const differenceInWeeks = require('date-fns/differenceInWeeks')
 const differenceInYears = require('date-fns/differenceInYears')
+const differenceInDays = require('date-fns/differenceInDays')
 const addDays = require('date-fns/addDays')
 const subYears = require('date-fns/subYears') //change to sub
 // const subMonths = require('date-fns/subMonths')
@@ -31,8 +32,11 @@ const utils = {
     const validateCurrentRecurringTransactions = this.validateCurrentRecurringTransactions(transactionPeriodicity)
     const addPastTransactions = this.addPastTransactions(validateCurrentRecurringTransactions)
     const addFutureTransactions = this.addFutureTransactions(addPastTransactions)
-    const determineRecurringValues = this.determineRecurringValues(addFutureTransactions)
-    const formatRecurringValueList = this.formatRecurringValueList(determineRecurringValues) //push this to response
+    const determineRecurringValueTotals = this.determineRecurringValueTotals(addFutureTransactions)
+    const formatRecurringValueList = this.formatRecurringValueList(determineRecurringValueTotals) //push this to response
+
+    //part 3
+    const windowLimit = this.determineWindowLimit(transactionPeriodicity)
   },
   compareTransactionDescriptions (transactions){
     //const recurring = []
@@ -201,9 +205,10 @@ const utils = {
     return returnVal
   },
   findAverageandStandardDeviation(transactions) {
+    let returnVal = transactions
     //console.log('trans', transactions)
-    for (let key in transactions) {
-      let transactionDates = transactions[key]['dates']
+    for (let key in returnVal) {
+      let transactionDates = returnVal[key]['dates']
       let transactionAmounts = []
 
       for (let i = 0; i < transactionDates.length; i++) {
@@ -213,7 +218,7 @@ const utils = {
       }
       //calculate Average
       let averageAmount = transactionAmounts.reduce((acc, cum) => acc + cum, 0) / transactionAmounts.length
-      transactions[key]['averageAmount'] = averageAmount
+      returnVal[key]['averageAmount'] = averageAmount
 
        //calculate variance
       let squareDiffs = transactionAmounts.map((value) => {
@@ -228,12 +233,12 @@ const utils = {
       stdDeviation = +stdDeviation.toFixed(2)
 
       //only return if SD < 2.5
-      if (stdDeviation < 2.5) transactions[key]['stdDeviation'] = stdDeviation
-      else delete transactions[key]
+      if (stdDeviation < 2.5) returnVal[key]['stdDeviation'] = stdDeviation
+      else delete returnVal[key]
     }
     
     //console.log('trans2', transactions)
-    return transactions
+    return returnVal
   },
   validateCurrentRecurringTransactions(transactions) {
     const returnVal = transactions
@@ -354,7 +359,7 @@ const utils = {
     return returnVal
     //console.log(returnVal)
   },
-  determineRecurringValues(transactions) {
+  determineRecurringValueTotals(transactions) {
     const returnVal = transactions
     //console.log(returnVal)
     for (let key in returnVal) {
@@ -381,16 +386,53 @@ const utils = {
       const description = transactions[key]
       const recurringValueTotal = transactions[key]?.['recurringValueTotal'] ?? null
 
-      if (recurringValueTotal !== null) {
+      if (recurringValueTotal) {
         returnVal.push({
           'description': key,
           'value': recurringValueTotal
         })
       }
     }
-    console.log(returnVal)
+    //console.log(returnVal)
     return returnVal
-  }
+  },
+  // determineWindowLimit(transactions) {
+  //   console.log(transactions)
+  //   const returnVal = []
+  //   const windowLimit = 2000000
+  //   let largestAmount
+  //   // const startDate = new Date()
+  //   // const endDate =  new Date(2022, 1, 9)
+  //   // const diff = differenceInDays(endDate, startDate)
+  //   // console.log(dates)
+
+  //   for (let key in transactions) {
+  //     let dates = transactions[key]['dates']
+  //     let left = 0 //set pointers for moving window search on dates array
+  //     let right = 1
+  //     // console.log(dates)
+  //     while (right < dates.length) {
+  //       let windowAmount = 0
+
+  //       let idxLeft = dates[left]
+  //       let idxRight = dates[right]
+
+  //       let dateLeft = idxLeft[0]
+  //       let dateRight = idxRight[0]
+  //       let diff = differenceInDays(dateRight, dateLeft)
+
+  //       let amountLeft = idxLeft[1]
+  //       let amountRight = idxRight[1]
+
+  //       // console.log(diff)
+  //       break
+
+  //     }
+
+  //     }
+
+  //     }
+   
 }
 
 module.exports = utils
